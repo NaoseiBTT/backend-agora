@@ -59,7 +59,7 @@ const btnExpandSidebar = document.getElementById('btn-expand-sidebar');
 // ==========================================
 async function obterTokenAutomatico(canal) {
     try {
-        const resposta = await fetch(`http://localhost:3000/rtcToken?channelName=${canal}`);
+        const response = await fetch(`https://dc-private.onrender.com/rtcToken?channelName=${channelName}&uid=${uid}`);
         if (!resposta.ok) throw new Error(`HTTP status ${resposta.status}`);
         const dados = await resposta.json();
         return dados.token;
