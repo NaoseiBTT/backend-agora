@@ -55,17 +55,20 @@ const btnCollapseSidebar = document.getElementById('btn-collapse-sidebar');
 const btnExpandSidebar = document.getElementById('btn-expand-sidebar');
 
 // ==========================================
-// REQUISIÇÃO DE TOKEN (BACKEND NODE)
+// REQUISIÇÃO DE TOKEN (BACKEND NODE - RENDER)
 // ==========================================
 async function obterTokenAutomatico(canal) {
     try {
-        const response = await fetch(`https://dc-private.onrender.com/rtcToken?channelName=${channelName}&uid=${uid}`);
-        if (!resposta.ok) throw new Error(`HTTP status ${resposta.status}`);
-        const dados = await resposta.json();
+        // Usa as variáveis corretas: canal e userNick
+        const response = await fetch(`https://dc-private.onrender.com/rtcToken?channelName=${canal}&uid=${userNick}`);
+        
+        if (!response.ok) throw new Error(`HTTP status ${response.status}`);
+        
+        const dados = await response.json();
         return dados.token;
     } catch (erro) {
-        console.error("Erro ao obter token automático do servidor Node:", erro);
-        alert("Erro ao obter o token de acesso. Verifique se o servidor Node.js está rodando na porta 3000.");
+        console.error("Erro ao obter token automático do servidor Render:", erro);
+        alert("Erro ao obter o token de acesso do servidor na nuvem.");
         return null;
     }
 }
