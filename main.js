@@ -57,10 +57,9 @@ const btnExpandSidebar = document.getElementById('btn-expand-sidebar');
 // ==========================================
 // REQUISIÇÃO DE TOKEN (BACKEND NODE - RENDER)
 // ==========================================
-async function obterTokenAutomatico(canal) {
+async function obterTokenAutomatico(canal, uidDesejado = userNick) {
     try {
-        // Usa as variáveis corretas: canal e userNick
-        const response = await fetch(`https://dc-private.onrender.com/rtcToken?channelName=${canal}&uid=${userNick}`);
+        const response = await fetch(`https://dc-private.onrender.com/rtcToken?channelName=${canal}&uid=${uidDesejado}`);
         
         if (!response.ok) throw new Error(`HTTP status ${response.status}`);
         
@@ -347,19 +346,16 @@ channelBtns.forEach(btn => {
         const novoCanal = btn.getAttribute('data-channel');
         if (novoCanal === CHANNEL) return;
 
-        // Atualiza estado visual do botão ativo
         channelBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
         CHANNEL = novoCanal;
 
-        // Atualiza dinamicamente o título do topo
         if (channelTitleHeader) {
             const nomeCanalFormatado = btn.innerText.trim();
             channelTitleHeader.innerText = `Sala de Voz - ${nomeCanalFormatado}`;
         }
 
-        // Se o usuário já estiver conectado em uma chamada, reconecta na nova sala
         if (isJoined) {
             await sairDaSalaAtual();
             await entrarNaSalaAtual();
@@ -380,7 +376,7 @@ async function entrarNaSalaAtual() {
         userNick = inputNick && inputNick.value.trim() !== '' ? inputNick.value.trim() : 'Usuário';
         localStorage.setItem('user_nickname', userNick);
 
-        const tokenAtual = await obterTokenAutomatico(CHANNEL);
+        const tokenAtual = await obterTokenAutomatico(CHANNEL, userNick);
         if (!tokenAtual) {
             btnJoin.disabled = false;
             return;
@@ -408,6 +404,8 @@ async function entrarNaSalaAtual() {
         // Inscreve-se nos usuários já presentes na sala
         for (const user of client.remoteUsers) {
             const remoteNick = String(user.uid);
+            if (remoteNick === `${userNick}-screen`) continue; // Ignora própria tela se reconectado
+
             criarUserCard(remoteNick, remoteNick);
 
             if (user.hasVideo) {
@@ -458,7 +456,6 @@ async function sairDaSalaAtual() {
     if (userRef) userRef.update({ status: 'lobby', channel: CHANNEL });
 }
 
-// BIND DOS BOTÕES DE AÇÃO
 btnJoin.addEventListener('click', () => entrarNaSalaAtual());
 btnLeave.addEventListener('click', () => sairDaSalaAtual());
 
@@ -478,29 +475,34 @@ btnMic.addEventListener('click', async () => {
 // ==========================================
 btnScreen.addEventListener('click', async () => {
     try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-            video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
-            audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
-        });
+        const screenUid = `${userNick}-screen`;
+        const screenToken = await obterTokenAutomatico(CHANNEL, screenUid);
+        if (!screenToken) return;
 
-        const videoTrack = stream.getVideoTracks()[0];
-        const audioTrack = stream.getAudioTracks()[0];
+        // Captura da tela / aba com áudio do sistema (opcional)
+        const screenTracks = await AgoraRTC.createScreenVideoTrack(
+            {
+                encoderConfig: "720p_2",
+                optimizationMode: "detail"
+            },
+            "auto" // Permite capturar áudio do sistema se o usuário marcar a opção
+        );
 
-        localScreenTrack = AgoraRTC.createCustomVideoTrack({ mediaStreamTrack: videoTrack });
-        if (audioTrack) {
-            localScreenAudioTrack = AgoraRTC.createCustomAudioTrack({ mediaStreamTrack: audioTrack });
+        if (Array.isArray(screenTracks)) {
+            localScreenTrack = screenTracks[0];
+            localScreenAudioTrack = screenTracks[1];
+        } else {
+            localScreenTrack = screenTracks;
         }
 
         screenClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-        const screenUid = `${userNick}-screen`;
-        
-        const screenToken = await obterTokenAutomatico(CHANNEL);
-        if (!screenToken) return;
 
         await screenClient.join(APP_ID, CHANNEL, screenToken, screenUid);
 
         const tracksToPublish = [localScreenTrack];
-        if (localScreenAudioTrack) tracksToPublish.push(localScreenAudioTrack);
+        if (localScreenAudioTrack) {
+            tracksToPublish.push(localScreenAudioTrack);
+        }
 
         await screenClient.publish(tracksToPublish);
 
@@ -512,7 +514,8 @@ btnScreen.addEventListener('click', async () => {
         btnScreen.style.display = 'none';
         btnStopScreen.style.display = 'inline-block';
 
-        videoTrack.onended = () => pararTransmissao();
+        // Lida com encerramento nativo (quando o usuário clica em "Parar compartilhamento" no topo do navegador)
+        localScreenTrack.on("track-ended", () => pararTransmissao());
 
     } catch (error) {
         console.error("Erro ao transmitir tela:", error);
@@ -547,6 +550,8 @@ async function pararTransmissao() {
 // ==========================================
 client.on("user-joined", (user) => {
     const remoteNick = String(user.uid);
+    if (remoteNick === `${userNick}-screen`) return; // Ignora o cliente de tela do próprio usuário
+
     if (isJoined) {
         tocarSomNotificacao('entrar');
         criarUserCard(remoteNick, remoteNick);
@@ -555,13 +560,19 @@ client.on("user-joined", (user) => {
 
 client.on("user-left", (user) => {
     const remoteNick = String(user.uid);
-    if (isJoined) tocarSomNotificacao('sair');
+    if (isJoined && remoteNick !== `${userNick}-screen`) {
+        tocarSomNotificacao('sair');
+    }
     removerUserCard(remoteNick);
 });
 
 client.on("user-published", async (user, mediaType) => {
-    await client.subscribe(user, mediaType);
     const remoteNick = String(user.uid);
+
+    // Evita se inscrever nas faixas da própria tela
+    if (remoteNick === `${userNick}-screen`) return;
+
+    await client.subscribe(user, mediaType);
 
     if (mediaType === "video" && isJoined) {
         const card = criarUserCard(remoteNick, remoteNick);
@@ -571,7 +582,7 @@ client.on("user-published", async (user, mediaType) => {
 
     if (mediaType === "audio") {
         remoteAudioTracks.set(remoteNick, user.audioTrack);
-        if (isJoined && remoteNick !== `${userNick}-screen`) {
+        if (isJoined) {
             user.audioTrack.play();
         }
     }
