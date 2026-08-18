@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Discord Privado</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar de Canais e Membros -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Meu Servidor</h2>
+                <button id="btn-collapse-sidebar" class="btn-toggle-sidebar" title="Recolher barra lateral">◀</button>
+            </div>
+
+            <!-- Campo para o usuário digitar o Nick -->
+            <div class="user-nickname-container">
+                <label for="input-nickname">Seu Nick:</label>
+                <input type="text" id="input-nickname" placeholder="Digite seu nome..." maxlength="15" />
+            </div>
+
+            <!-- CANAIS DE VOZ (SALAS) -->
+            <div class="channels-section">
+                <h3>Canais de Voz</h3>
+                <button class="channel-btn active" data-channel="geral">🔊 Geral</button>
+                <button class="channel-btn" data-channel="games-1">🎮 Games 1</button>
+                <button class="channel-btn" data-channel="games-2">🎮 Games 2</button>
+                <button class="channel-btn" data-channel="games-3">🎮 Games 3</button>
+                <button class="channel-btn" data-channel="filmes 1">🎬 Filmes 1</button>
+                <button class="channel-btn" data-channel="filmes 2">🎬 Filmes 2</button>
+                <button class="channel-btn" data-channel="animes 1">🎬 Animes 1</button>
+                <button class="channel-btn" data-channel="animes 2">🎬 Animes 2</button>
+            </div>
+
+            <hr class="sidebar-divider">
+
+            <!-- LISTA DE USUÁRIOS NO LOBBY/CALL -->
+            <div class="users-section">
+                <h3>Membros</h3>
+                <div id="users-list" class="users-list"></div>
+            </div>
+        </aside>
+
+        <!-- Área Principal / Vídeo -->
+        <main class="main-content">
+            <!-- Botão Flutuante para Reabrir a Sidebar -->
+            <button id="btn-expand-sidebar" class="btn-open-sidebar" title="Abrir barra lateral">
+                <span>☰</span> Membros
+            </button>
+
+            <header class="top-bar">
+                <h3 id="current-channel-title">Sala de Voz - Geral</h3>
+            </header>
+
+            <!-- Container das Telas/Câmeras -->
+            <div id="video-grid" class="video-grid">
+                <div class="placeholder">
+                    <p>Nenhuma transmissão ao vivo na sala #geral.</p>
+                </div>
+            </div>
+
+            <!-- Barra de Controles (Microfone, Tela, Sair) -->
+            <footer class="controls-bar">
+                <button id="btn-join" class="btn btn-primary">Entrar no Canal</button>
+                <button id="btn-mic" class="btn" disabled>🎙️ Mutar</button>
+                <button id="btn-screen" class="btn" disabled>🖥️ Transmitir Tela</button>
+                <button id="btn-stop-screen" class="btn btn-danger" style="display: none;">⏹️ Parar Transmissão</button>
+                <button id="btn-leave" class="btn btn-danger" disabled>❌ Sair</button>
+            </footer>
+        </main>
+    </div>
+    
+    <!-- SDKs: Agora RTC (Voz/Vídeo) + Firebase Realtime Database -->
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <!-- Seu Script Principal -->
+    <script src="main.js"></script>
+
+</body>
+</html>
