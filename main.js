@@ -184,6 +184,7 @@ function atualizarStatusMuteVisual(nick, mutado) {
                 cardMuteIcon.style.top = '10px';
                 cardMuteIcon.style.right = '10px';
                 cardMuteIcon.style.fontSize = '1.2rem';
+                cardMuteIcon.style.zIndex = '10';
                 card.appendChild(cardMuteIcon);
             }
         } else if (cardMuteIcon) {
@@ -239,15 +240,22 @@ function criarUserCard(uid, nickName) {
         card.className = "video-card";
         card.addEventListener('dblclick', () => toggleFullscreenCard(card));
 
-        const profileContainer = document.createElement("div");
-        profileContainer.className = "user-profile-card";
-        
-        const avatar = document.createElement("div");
-        avatar.className = "user-profile-avatar";
-        avatar.innerText = nickName.charAt(0).toUpperCase();
+        const isScreen = uid.endsWith('-screen');
 
-        profileContainer.appendChild(avatar);
-        card.appendChild(profileContainer);
+        // Cria o avatar APENAS se NÃO for uma tela de transmissão
+        if (!isScreen) {
+            const profileContainer = document.createElement("div");
+            profileContainer.className = "user-profile-card";
+            
+            const avatar = document.createElement("div");
+            avatar.className = "user-profile-avatar";
+            avatar.innerText = nickName.charAt(0).toUpperCase();
+
+            profileContainer.appendChild(avatar);
+            card.appendChild(profileContainer);
+        } else {
+            card.classList.add("is-screen-card");
+        }
 
         const badge = document.createElement("div");
         badge.className = "card-badge";
@@ -406,12 +414,13 @@ async function entrarNaSalaAtual() {
             const remoteNick = String(user.uid);
             if (remoteNick === `${userNick}-screen`) continue; // Ignora própria tela se reconectado
 
-            criarUserCard(remoteNick, remoteNick);
+            const card = criarUserCard(remoteNick, remoteNick);
 
             if (user.hasVideo) {
                 await client.subscribe(user, "video");
-                const card = criarUserCard(remoteNick, remoteNick);
                 card.classList.add("has-video");
+                const profile = card.querySelector('.user-profile-card');
+                if (profile) profile.style.display = 'none';
                 user.videoTrack.play(card, { fit: "contain" });
             }
             if (user.hasAudio) {
@@ -508,6 +517,11 @@ btnScreen.addEventListener('click', async () => {
 
         const card = criarUserCard(screenUid, `${userNick} (Tela)`);
         card.classList.add("has-video");
+        
+        // Garante que se existir container de perfil ele fique oculto
+        const profile = card.querySelector('.user-profile-card');
+        if (profile) profile.style.display = 'none';
+
         localScreenTrack.play(card, { fit: "contain" });
 
         btnScreen.disabled = true;
@@ -577,6 +591,11 @@ client.on("user-published", async (user, mediaType) => {
     if (mediaType === "video" && isJoined) {
         const card = criarUserCard(remoteNick, remoteNick);
         card.classList.add("has-video");
+        
+        // Esconde o avatar para que não cubra a transmissão
+        const profile = card.querySelector('.user-profile-card');
+        if (profile) profile.style.display = 'none';
+
         user.videoTrack.play(card, { fit: "contain" });
     }
 
@@ -596,6 +615,12 @@ client.on("user-unpublished", (user, mediaType) => {
             card.classList.remove("has-video");
             const playerDiv = card.querySelector('div[id^="agora-video-player"]');
             if (playerDiv) playerDiv.remove();
+
+            // Mostra o avatar novamente se não for um card de tela
+            const profile = card.querySelector('.user-profile-card');
+            if (profile && !remoteNick.endsWith('-screen')) {
+                profile.style.display = 'flex';
+            }
         }
     }
     if (mediaType === "audio") {
