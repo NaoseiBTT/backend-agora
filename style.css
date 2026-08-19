@@ -275,6 +275,16 @@ body {
   user-select: none;
 }
 
+/* REGRAS DO PLAYER DE VÍDEO DO AGORA */
+.video-card div[id^="agora-video-player"] {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
 .video-card.speaking {
   border-color: var(--accent-green);
   box-shadow: 0 0 10px rgba(67, 181, 129, 0.3);
@@ -292,6 +302,13 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  z-index: 2;
+}
+
+/* Oculta o avatar azul quando houver transmissão ou for uma tela */
+.video-card.has-video .user-profile-card,
+.video-card.is-screen-card .user-profile-card {
+  display: none !important;
 }
 
 .user-profile-avatar {
@@ -311,11 +328,13 @@ body {
   position: absolute;
   bottom: 10px;
   left: 10px;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.8rem;
+  z-index: 10; /* Garante visibilidade sobre o vídeo */
+  pointer-events: none;
 }
 
 /* SLIDER DE VOLUME NO CARD */
@@ -323,14 +342,15 @@ body {
   position: absolute;
   bottom: 10px;
   right: 10px;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 6px 10px;
   border-radius: 4px;
   display: flex;
   align-items: center;
   gap: 6px;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s ease-in-out;
+  z-index: 10; /* Garante sobreposição e clique por cima do vídeo */
 }
 
 .video-card:hover .volume-control-container {
@@ -338,7 +358,7 @@ body {
 }
 
 .volume-slider {
-  width: 60px;
+  width: 70px;
   accent-color: var(--accent-blurple);
   cursor: pointer;
 }
@@ -347,7 +367,7 @@ body {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
   border: none;
   width: 28px;
@@ -357,6 +377,7 @@ body {
   display: none;
   align-items: center;
   justify-content: center;
+  z-index: 10;
 }
 
 .video-card.maximized .btn-close-fullscreen {
